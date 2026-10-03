@@ -1,0 +1,142 @@
+# `make ci` is the whole gate: the same steps, in the same order.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# The jobs only read the repository.
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    # Sibling bindings are checked out inside the workspace, not beside it as on a dev machine.
+    timeout-minutes: 90
+    env:
+      GLYCIN_STAGE: amber-glycin/build/glycin/stage
+      GTK_STAGE: amber-glycin/build/gtk-sdk/stage
+      GLIB: odin-glib
+      CAIRO: odin-cairo
+      PANGO: odin-pango
+      GRAPHENE: odin-graphene
+      PIXBUF: odin-gdk-pixbuf
+      GTK4: odin-gtk4
+    steps:
+      - uses: actions/checkout@v4
+
+      # Public sibling binding.
+      - name: odin-glib
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-glib
+          path: odin-glib
+
+      # Public sibling binding.
+      - name: odin-cairo
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-cairo
+          path: odin-cairo
+
+      # Public sibling binding.
+      - name: odin-pango
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-pango
+          path: odin-pango
+
+      # Public sibling binding.
+      - name: odin-graphene
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-graphene
+          path: odin-graphene
+
+      # Public sibling binding.
+      - name: odin-gdk-pixbuf
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-gdk-pixbuf
+          path: odin-gdk-pixbuf
+
+      # Public sibling binding.
+      - name: odin-gtk4
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/odin-gtk4
+          path: odin-gtk4
+
+      # amber-glycin builds glycin 2.2.1 and its loaders; the tests link and load that, so the
+      # sandboxed loaders run. Its `make gtk-sdk` builds the GTK 4.16 stage that
+      # libglycin-gtk4 and the glycin_gtk4 tests need.
+      - name: amber-glycin
+        uses: actions/checkout@v4
+        with:
+          repository: Hyperquader-Coders/amber-glycin
+          path: amber-glycin
+
+      # The build dependencies of amber-glycin's own workflow, plus xvfb and bubblewrap for the tests.
+      - name: system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            meson ninja-build pkg-config gcc-14 dpkg-dev binutils shellcheck \
+            libglib2.0-dev libseccomp-dev libfontconfig-dev librsvg2-dev libcairo2-dev \
+            libgdk-pixbuf-2.0-dev libgtk-4-1 bubblewrap gettext xvfb \
+            sassc gperf libpango1.0-dev libgraphene-1.0-dev libepoxy-dev libxkbcommon-dev \
+            libwayland-dev libx11-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev \
+            libxrandr-dev libxext-dev libxfixes-dev libcairo-script-interpreter2 libjpeg-dev \
+            libtiff-dev libharfbuzz-dev libfribidi-dev libdrm-dev
+
+      - name: Rust toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+
+      - name: GTK version
+        id: gtk
+        run: echo "v=$(sed -n 's/^GTK_VERSION *= *//p' amber-glycin/Makefile)" >> "$GITHUB_OUTPUT"
+
+      - name: cache the GTK stage
+        id: gtk-cache
+        uses: actions/cache@v4
+        with:
+          path: amber-glycin/build/gtk-sdk/stage
+          key: gtk-sdk-${{ steps.gtk.outputs.v }}-${{ runner.os }}
+
+      - name: build GTK
+        if: steps.gtk-cache.outputs.cache-hit != 'true'
+        run: make -C amber-glycin gtk-sdk
+
+      - name: glycin version
+        id: glycin
+        run: echo "v=$(sed -n 's/^VERSION *= *//p' amber-glycin/Makefile)" >> "$GITHUB_OUTPUT"
+
+      - name: cache glycin
+        id: glycin-cache
+        uses: actions/cache@v4
+        with:
+          path: amber-glycin/build/glycin/stage
+          key: glycin-${{ steps.glycin.outputs.v }}-${{ steps.gtk.outputs.v }}-${{ hashFiles('amber-glycin/patches/*.patch', 'amber-glycin/Makefile') }}-${{ runner.os }}
+
+      - name: build glycin
+        if: steps.glycin-cache.outputs.cache-hit != 'true'
+        # The job-level GTK_STAGE is relative to the workspace root; make -C changes directory first.
+        run: make -C amber-glycin glycin GTK_STAGE=build/gtk-sdk/stage
+
+      # glycin sandboxes its loaders with bubblewrap, which needs unprivileged user namespaces.
+      # ubuntu-24.04 restricts them through AppArmor, so allow them for this job, then show
+      # that bubblewrap can start so a refusal is visible in the log.
+      - name: allow bubblewrap
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bwrap --unshare-user --ro-bind / / true && echo "bubblewrap: ok"
+
+      - uses: Hyperquader-Coders/setup-amber-odin@v1
+
+      - name: make ci
+        run: make ci

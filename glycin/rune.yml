@@ -1,0 +1,76 @@
+# Generated with runic (docs/DECISIONS.md). Adapted from odin-gtk (MIT, docs/LICENSE-odin-gtk.md).
+# build/glycin is a symlink to amber-glycin's staged tree, build/sys to / (scripts/generate.sh).
+# GLib, GObject and GIO are external sources: their types come from odin-glib, never declared here.
+version: 0
+platforms:
+  - Linux x86_64
+from:
+  language: c
+  shared.linux: 'libglycin-2.so'
+  headers: ../build/glycin/usr/include/glycin-2/glycin.h
+  includedirs:
+    - ../stdinc/
+    - ../build/glycin/usr/include/glycin-2/
+    - ../build/sys/usr/include/glib-2.0/
+    - ../build/sys/usr/lib/x86_64-linux-gnu/glib-2.0/include/
+  defines:
+    GLIB_DISABLE_DEPRECATION_WARNINGS: 1
+  load_all_includes: true
+  extern:
+    - "../stdinc/*"
+    - "../stdinc/sys/*"
+    - "../build/sys/usr/include/glib-2.0/glib/*"
+    - "../build/sys/usr/include/glib-2.0/glib/deprecated/*"
+    - "../build/sys/usr/include/glib-2.0/glib.h"
+    - "../build/sys/usr/include/glib-2.0/gobject/*"
+    - "../build/sys/usr/include/glib-2.0/glib-object.h"
+    - "../build/sys/usr/include/glib-2.0/gio/*"
+    - "../build/sys/usr/include/glib-2.0/gio.h"
+    - "../build/sys/usr/include/glib-2.0/gmodule/*"
+    - "../build/sys/usr/include/glib-2.0/gmodule.h"
+    - "../build/sys/usr/lib/x86_64-linux-gnu/glib-2.0/include/*"
+  ignore:
+    types:
+      - '*autoptr*'
+      - va_list
+    constants:
+      - '*AVAILABLE*'
+      - '*DEPRECATED*'
+      - '_*'
+    functions:
+      - '*autoptr*'
+      - '*auto_cleanup*'
+to:
+  language: odin
+  package: glycin
+  out: glycin.odin
+  no_build_tag: true
+  detect:
+    parameters: declared
+  trim_prefix:
+    types:
+      - Gly
+      - g
+      - G
+    functions:
+      - gly_
+    constants:
+      - GLY_
+    enum_type_name: true
+  extern:
+    sources:
+      "../stdinc/stdarg.h": "core:c/libc"
+      "../stdinc/stdio.h": "core:c/libc"
+      "../stdinc/pthread.h": "core:c/libc"
+      "../stdinc/sys/types.h": "core:sys/linux"
+      "../build/sys/usr/include/glib-2.0/glib/*": "glib glib:glib"
+      "../build/sys/usr/include/glib-2.0/glib.h": "glib glib:glib"
+      "../build/sys/usr/include/glib-2.0/glib/deprecated/*": "glib glib:glib"
+      "../build/sys/usr/lib/x86_64-linux-gnu/glib-2.0/include/*": "glib glib:glib"
+      "../build/sys/usr/include/glib-2.0/gobject/*": "gobj glib:gobject"
+      "../build/sys/usr/include/glib-2.0/glib-object.h": "gobj glib:gobject"
+      "../build/sys/usr/include/glib-2.0/gio/*": "gio glib:gio"
+      "../build/sys/usr/include/glib-2.0/gio.h": "gio glib:gio"
+      "../build/sys/usr/include/glib-2.0/gmodule/*": "gobj glib:gobject"
+      "../build/sys/usr/include/glib-2.0/gmodule.h": "gobj glib:gobject"
+    trim_prefix: true

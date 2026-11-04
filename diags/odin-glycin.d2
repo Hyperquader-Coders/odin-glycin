@@ -1,0 +1,32 @@
+# odin-glycin: its place in the binding graph
+# Render:  d2 diags/odin-glycin.d2 diags/odin-glycin.svg
+
+direction: down
+
+title: "odin-glycin" {
+  shape: text
+  near: top-center
+  style.font-size: 28
+  style.bold: true
+}
+
+consumers: "Amber apps that load images\nimport \"glycin:<pkg>\"" {
+  style.fill: "#f2f2f2"
+}
+this: "odin-glycin\nglycin 2 and libglycin-gtk4 2.2.1" {
+  style.fill: "#eef6ff"
+}
+glib: "odin-glib\nglib, gobject, gio" {
+  style.fill: "#eef6ff"
+}
+gtk4: "odin-gtk4\n(glycin_gtk4 only)" {
+  style.fill: "#eef6ff"
+}
+lib: "libglycin-2, libglycin-gtk4-2\n(amber-glycin, /usr/lib/amber-glycin)" {
+  style.fill: "#fff6e6"
+}
+
+consumers -> this: collection glycin
+this -> glib: collection glib
+this -> gtk4: collection gtk4
+this -> lib: foreign import

@@ -1,0 +1,58 @@
+# What odin-glycin is and needs: build is what a program on it needs, test what only its own
+# tests and checks need. house-rules docs/PROJECT_TOML.md has the layout.
+[project]
+schema = "amber-project-1"
+name = "odin-glycin"
+license = "MPL-2.0 OR LGPL-2.1-or-later"
+kind = "binding"
+summary = "Odin bindings for glycin 2 and libglycin-gtk4, generated with runic"
+tags = [
+  "ai-assisted",
+  "bindings",
+  "glycin",
+  "linux",
+  "odin",
+  "runic",
+]
+collection = "glycin"
+
+[siblings.AMBER_ROOT]
+odin-glib = "https://github.com/Hyperquader-Coders/odin-glib"
+odin-cairo = "https://github.com/Hyperquader-Coders/odin-cairo"
+odin-pango = "https://github.com/Hyperquader-Coders/odin-pango"
+odin-graphene = "https://github.com/Hyperquader-Coders/odin-graphene"
+odin-gdk-pixbuf = "https://github.com/Hyperquader-Coders/odin-gdk-pixbuf"
+odin-gtk4 = "https://github.com/Hyperquader-Coders/odin-gtk4"
+
+[build]
+# The libraries the tests link (amber-glycin-dev, amber-gtk4-dev) and the headers the
+# generation reads; for the tests xvfb and bubblewrap, and imagemagick, whose convert
+# scripts/fixtures.sh makes the JPEG and GIF fixtures with. At run time glycin's loaders sandbox
+# themselves with bubblewrap, in every program on this binding.
+packages = [
+  "amber-glycin-dev",
+  "amber-gtk4-dev",
+  "libglib2.0-dev",
+  "libcairo2-dev",
+  "libpango1.0-dev",
+  "libgraphene-1.0-dev",
+  "libgdk-pixbuf-2.0-dev",
+]
+lib = [
+  "glycin",
+  "glycin_gtk4",
+]
+
+[test]
+packages = [
+  "xvfb",
+  "bubblewrap",
+  "imagemagick",
+  "shellcheck",
+  "shfmt",
+]
+
+[runtime]
+packages = [
+  "bubblewrap",
+]
